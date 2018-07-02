@@ -1,45 +1,55 @@
 import json
+import logging
 import paho.mqtt.client as mqtt
 import time
 
-class Client:
+LOGGER = logging.getLogger(__name__)
+LOG_FORMAT = "{asctime} -- {levelname} -- {filename} -- {message}"
+FORMATTER = logging.Formatter(fmt=LOG_FORMAT, style="{")
+CONSOLE_HANDLER = logging.StreamHandler()
+CONSOLE_HANDLER.setFormatter(FORMATTER)
+LOGGER.addHandler(CONSOLE_HANDLER)
+LOGGER.setLevel(logging.DEBUG)
 
-    def __init__(self, ip_addr=None):
-        self._client = mqtt.Client()
-        self._client.on_message = on_message
-        self._client.on_connect = on_connect
-        self._client.on_subscribe = on_subscribe
+class Client(mqtt.Client):
+
+    def __init__(self, ip_addr=None, port=None, **kwargs):
+        super().__init__(**kwargs)
         self.ip_addr = ip_addr
-        self.port = 1883
+        self.port = port
+        self.on_connect = on_connect
+        self.on_subscribe = on_subscribe
+        self.on_message = on_message
+
+    def connect(self, ip_addr=None, port=1883, **kwargs):
+        self.ip_addr = ip_addr if self.ip_addr is None else self.ip_addr
+        self.port = port if self.port is None else self.port
+        LOGGER.debug(f"connecting to {self.ip_addr}:{self.port}")
+        if self.ip_addr is None or self.port is None:
+            raise Exception()
+        else:
+            super().connect(self.ip_addr, self.port, **kwargs)
 
     def __enter__(self):
-        self.connect(self.ip_addr)
+        self.connect()
         return self
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, e_type, e_value, e_traceback):
+        if e_type:
+            LOGGER.error(str(e_type))
         self.disconnect()
 
-    def connect(self, ip_addr=None):
-        print(f"connecting to {ip_addr}...")
-        if self.ip_addr is None:
-            self.ip_addr = ip_addr
-        self._client.connect(self.ip_addr, port=self.port)
-
-    def subscribe(self, topic):
-        print(f"subscribing to {topic}...")
-        self._client.subscribe(topic)
-
-    def disconnect(self):
-        self._client.disconnect()
-
     def check_for_data(self):
-        self._client.loop(timeout=5.0)
-
-def on_subscribe(client, userdata, mid, granted_qos):
-    print(mid)
+        self.loop(timeout=5.0)
 
 def on_connect(client, userdata, flags, rc):
-    print(rc)
+    LOGGER.info(f"client connected to {client.ip_addr}")
+
+def on_subscribe(client, userdata, mid, granted_qos):
+    LOGGER.info("client subscribed")
 
 def on_message(client, userdata, message):
-    print(json.loads(message.payload, encoding="utf-8"))
+    LOGGER.info("message received")
+    payload = json.loads(message.payload, encoding="utf-8")
+    LOGGER.debug(f"payload: {payload}")
+
