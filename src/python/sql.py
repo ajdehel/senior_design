@@ -9,7 +9,7 @@ class Database:
                  database=None, username=None, password=None, **kwargs):
         connection_string = (f"DRIVER={{{driver}}};SERVER={server};PORT={port};"
                              f"DATABASE={database};UID={username};PWD={password}")
-        LOGGER.debug(connection_string)
+        LOGGER.debug(f"connecting to {database} at {server}:{port} with {driver}")
         self.connection = pypyodbc.connect(connection_string, **kwargs)
         LOGGER.info("Connection Succeeded.")
 
