@@ -6,13 +6,16 @@ import time
 
 LOGGER = logging.getLogger("PLUMBINTEL")
 
+MAX_KEEP_ALIVE = 2**16 - 1
+
 class Client(mqtt.Client):
 
-    def __init__(self, ip_addr=None, port=None, **kwargs):
+    def __init__(self, ip_addr=None, port=None, keep_alive=60, **kwargs):
         super().__init__(**kwargs)
         self.ip_addr = ip_addr
         self.port = port
         self.database = None
+        self.keep_alive = keep_alive
         self.on_connect = on_connect
         self.on_subscribe = on_subscribe
         self.on_message = on_message
@@ -21,6 +24,7 @@ class Client(mqtt.Client):
         self.ip_addr = ip_addr if self.ip_addr is None else self.ip_addr
         self.port = port if self.port is None else self.port
         LOGGER.debug(f"connecting to {self.ip_addr}:{self.port}")
+        kwargs["keepalive"] = self.keep_alive
         if self.ip_addr is None or self.port is None:
             raise Exception()
         else:

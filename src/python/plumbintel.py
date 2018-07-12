@@ -41,7 +41,8 @@ def main():
     with sql.Database(**SQL_CONFIG, timeout=30) as db:
         with mqtt.Client(ip_addr=MQTT_BROKER_HOST,
                          port=MQTT_BROKER_PORT,
-                         client_id="PLUMBINTEL") as client:
+                         client_id="PLUMBINTEL",
+                         keep_alive=mqtt.MAX_KEEP_ALIVE) as client:
             client.subscribe(MQTT_TOPIC)
             client.accept_database(db, SQL_TABLE)
             while True:
