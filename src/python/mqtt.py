@@ -52,7 +52,7 @@ class Client(mqtt.Client):
             if len(payload) is 3:
                 timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 payload = payload[0:2] + [timestamp,] + payload[2:]
-            self.database.update(self.db_target_table, payload)
+            self.database.insert(self.db_target_table, payload)
 
 def on_connect(client, userdata, flags, rc):
     LOGGER.info(f"client connected to {client.ip_addr}")
