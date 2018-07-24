@@ -18,26 +18,8 @@ LOGGER.addHandler(CONSOLE_HANDLER)
 LOGGER.setLevel(logging.DEBUG)
 
 #Constants for establishing connections
-##MQTT Constants
-MQTT_BROKER_HOST = "18.217.132.144"
-MQTT_BROKER_PORT = 1883
-MQTT_TOPIC = "Devices"
-##SQL Constants
-SQL_SERVER_HOST = "test-mssql.cfblwhszdeig.us-east-2.rds.amazonaws.com"
-SQL_SERVER_PORT = "1433"
-SQL_DRIVER   = "ODBC Driver 17 for SQL Server"
-SQL_DATABASE = "PlumbIntel"
-SQL_USERNAME = "testsql"
-SQL_PASSWORD = "Testpassword"
-SQL_TABLE    = "Devices"
+CONF_PATH = "/etc/plumbintel.conf"
 
-SQL_CONFIG = {"driver": SQL_DRIVER,
-              "server": SQL_SERVER_HOST,
-              "port": SQL_SERVER_PORT,
-              "database": SQL_DATABASE,
-              "username": SQL_USERNAME,
-              "password": SQL_PASSWORD,
-             }
 def parse_device_packet(packet):
     """Parse packets, convert voltage to correct form and return list for SQL DB.
         Plumbintel packets are expected to be in the following form:
@@ -70,18 +52,14 @@ def configure():
     except PermissionError as e:
         LOGGER.critical(f"Could not open {CONF_PATH}. Escalate Permissions.")
 
-
-
-def main():
-    with sql.Database(**SQL_CONFIG, timeout=30) as db:
-        with mqtt.Client(ip_addr=MQTT_BROKER_HOST,
-                         port=MQTT_BROKER_PORT,
-                         client_id="PLUMBINTEL") as client:
-            client.subscribe(MQTT_TOPIC)
-            client.accept_database(db, SQL_TABLE)
+def main(config):
+    with sql.Database(**config["SQL"], timeout=30) as db:
+        with udp.Listener(ip_addr=MQTT_BROKER_HOST,
+                          port=MQTT_BROKER_PORT) as listener:
             while True:
-                client.check_for_data()
+                listener.check_for_data()
 
 if __name__ == "__main__":
-    main()
+    config = configure()
+    main(config)
 
