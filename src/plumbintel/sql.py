@@ -24,16 +24,8 @@ class Database:
     def validate(self, json):
         """Ensure new data is valid for the database."""
         pass
-
-    def update(self, table_name, values, columns=""):
-        """Method to update data in a given table.
-            will also insert new data into the table if the first
-            column item in values is not found in the database.
-        """
-        self._insert(table_name, values, columns)
-
     def _insert(self, table_name, values, columns=""):
-        """Underlying method to insert new values into a given data."""
+        """Method to insert new values into a given table."""
         col_string = ""
         if columns != "":
             columns = ", ".join(columns)
@@ -47,9 +39,6 @@ class Database:
                 LOGGER.info("Insert Succeeded.")
         except pypyodbc.DataError as error:
             LOGGER.error(error)
-
-    def _update(self, table_name, values, clause, columns):
-        """Underlying method to update an existing entry in a given table."""
 
     @property
     def connected(self):
