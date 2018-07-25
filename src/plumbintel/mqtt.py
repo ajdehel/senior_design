@@ -1,8 +1,11 @@
+import collections
 import datetime
 import json
 import logging
 import paho.mqtt.client as mqtt
 import time
+from __init__ import Message
+
 
 LOGGER = logging.getLogger("PLUMBINTEL")
 
@@ -13,6 +16,8 @@ class Client(mqtt.Client):
         self.ip_addr = ip_addr
         self.port = port
         self.database = None
+        self._thread_running = False
+        self.message_queue = collections.deque()
         self.on_connect = on_connect
         self.on_subscribe = on_subscribe
         self.on_message = on_message
@@ -20,16 +25,11 @@ class Client(mqtt.Client):
     def connect(self, ip_addr=None, port=1883, **kwargs):
         self.ip_addr = ip_addr if self.ip_addr is None else self.ip_addr
         self.port = port if self.port is None else self.port
-        LOGGER.debug(f"connecting to {self.ip_addr}:{self.port}")
         if self.ip_addr is None or self.port is None:
             raise Exception()
         else:
             super().connect(self.ip_addr, self.port, **kwargs)
-
-    def accept_database(self, database, table, ):
-        if database.connected:
-            self.database = database
-            self.db_target_table = table
+            LOGGER.info(f"Connected to {self.ip_addr}:{self.port}")
 
     def __enter__(self):
         self.connect()
@@ -38,17 +38,21 @@ class Client(mqtt.Client):
     def __exit__(self, e_type, e_value, e_traceback):
         if e_type:
             LOGGER.error(str(e_type))
+        if self._thread_running:
+            self.loop_stop()
+            self._thread_running = False
         self.disconnect()
 
-    def check_for_data(self):
-        self.loop(timeout=5.0)
+    def check_for_data(self, timeout=5.0):
+        self.loop(timeout=timeout)
+
+    def start_thread(self):
+        self.loop_start()
+        self._thread_running = True
 
     def handle_message(self, payload):
-        if self.database:
-            if len(payload) is 3:
-                timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                payload = payload[0:2] + [timestamp,] + payload[2:]
-            self.database.update(self.db_target_table, payload)
+        timestamp = datetime.datetime.now()
+        self.message_queue.append(Message(payload, timestamp))
 
 def on_connect(client, userdata, flags, rc):
     LOGGER.info(f"client connected to {client.ip_addr}")
@@ -57,11 +61,6 @@ def on_subscribe(client, userdata, mid, granted_qos):
     LOGGER.info("client subscribed")
 
 def on_message(client, userdata, message):
-    LOGGER.info("message received")
-    try:
-        payload = json.loads(message.payload, encoding="utf-8")
-        LOGGER.debug(f"payload: {payload}")
-        client.handle_message(payload)
-    except json.decoder.JSONDecodeError as error:
-        LOGGER.error(f"received improperly formatted payload {str(message.payload)}")
+    LOGGER.debug(f"Received message from broker")
+    client.handle_message(message.payload)
 

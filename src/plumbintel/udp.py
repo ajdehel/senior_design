@@ -3,6 +3,8 @@ import logging
 import socket
 import time
 import collections
+import threading
+from __init__ import Message
 
 LOGGER = logging.getLogger("PLUMBINTEL")
 
@@ -18,6 +20,8 @@ class Listener:
         self.port = port
         self._rx_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._closed = True
+        self._thread = None
+        self._stopped = True
         self.message_queue = collections.deque()
 
     def __enter__(self):
@@ -25,20 +29,37 @@ class Listener:
         return self
 
     def __exit__(self, e_type, e_value, e_traceback):
+        if self._thread.is_alive():
+            self._stopped = True
+            self._thread.join()
+            LOGGER.info("Thread stopped")
         if e_type:
             LOGGER.error(f"{e_type} {e_value}")
         self.close()
 
+    def __call__(self):
+        if not self._connected:
+            self.connect()
+        while not self._stopped:
+            self.check_for_data()
+
+    def start_thread(self):
+        self._thread = threading.Thread(target=self, name="SocketListener")
+        self._stopped = False
+        self._thread.start()
+        LOGGER.info("Started listener thread.")
+
     def check_for_data(self):
         self._rx_socket.setblocking(False)
+        packet_count = 0
         try:
             while True:
-                message = self._rx_socket.recv(256)
+                packet = self._rx_socket.recv(256)
                 timestamp = datetime.datetime.now()
-                print("retrieved message from socket")
-                self.message_queue.append((message, timestamp))
+                LOGGER.debug("Retrieved message from socket.")
+                self.message_queue.append(Message(packet, timestamp))
+                packet_count += 1
         except BlockingIOError as e:
-            print("no more messages from socket")
             pass
 
     def connect(self):
@@ -48,9 +69,9 @@ class Listener:
         try:
             self._rx_socket.bind((self.ip_addr, self.port))
             self._connected = True
-            print("socket.bind() succeeded")
+            LOGGER.info(f"Socket bound at {self.ip_addr}:{self.port}.")
         except:
-            print("socket.bind() failed")
+            LOGGER.error("Failed to bind socket.")
             self._connected = False
 
     def close(self):

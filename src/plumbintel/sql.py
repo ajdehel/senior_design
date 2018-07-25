@@ -9,7 +9,8 @@ class Database:
                  database=None, username=None, password=None, **kwargs):
         connection_string = (f"DRIVER={{{driver}}};SERVER={server};PORT={port};"
                              f"DATABASE={database};UID={username};PWD={password}")
-        LOGGER.debug(f"connecting to {database} at {server}:{port} with {driver}")
+        LOGGER.debug(kwargs)
+        LOGGER.debug(f"connecting to {username}@{database} at {server}:{port} with {driver}")
         self.connection = pypyodbc.connect(connection_string, **kwargs)
         LOGGER.info("Connection Succeeded.")
 
@@ -23,8 +24,8 @@ class Database:
 
     def validate(self, json):
         """Ensure new data is valid for the database."""
-        pass
-    def _insert(self, table_name, values, columns=""):
+
+    def insert(self, table_name, values, columns=""):
         """Method to insert new values into a given table."""
         col_string = ""
         if columns != "":
@@ -36,7 +37,7 @@ class Database:
         LOGGER.debug(insert_string)
         try:
             with self.connection.cursor().execute(insert_string):
-                LOGGER.info("Insert Succeeded.")
+                LOGGER.debug("Insert Succeeded.")
         except pypyodbc.DataError as error:
             LOGGER.error(error)
 
