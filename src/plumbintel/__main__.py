@@ -48,7 +48,6 @@ def configure():
     raise Exception
 
 def insert_into_database(db, db_table, queue):
-    global INSERTIONS
     insertions = 0
     try:
         while True:
@@ -61,9 +60,8 @@ def insert_into_database(db, db_table, queue):
         LOGGER.info(f"Inserted {insertions} entries into the Database")
     except pypyodbc.DatabaseError as e:
         LOGGER.error("Could not insert entry into db")
-    INSERTIONS += insertions
 
-def main(config):
+def socket_interface(config):
     with sql.Database(**config["SQL"]["Connection"], timeout=30) as db:
         with udp.Listener(ip_addr=config["Listener"]["host"],
                           port=config["Listener"]["port"]) as listener:
@@ -72,7 +70,7 @@ def main(config):
                 time.sleep(10.0)
                 insert_into_database(db, config["SQL"]["table"], listener.message_queue)
 
-def main2(config):
+def mqtt_interface(config):
     with sql.Database(**config["SQL"]["Connection"], timeout=30) as db:
         with mqtt.Client(ip_addr=config["MQTT"]["host"],
                           port=config["MQTT"]["port"]) as client:
@@ -82,10 +80,10 @@ def main2(config):
                 time.sleep(10.0)
                 insert_into_database(db, config["SQL"]["table"], client.message_queue)
 
-if __name__ == "__main__":
+def main():
     config = configure()
-    try:
-        main(config)
-    except KeyboardInterrupt:
-        print(INSERTIONS)
+    mqtt_interface(config)
+
+if __name__ == "__main__":
+    main()
 
