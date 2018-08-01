@@ -4,7 +4,7 @@ import json
 import logging
 import paho.mqtt.client as mqtt
 import time
-from __init__ import Message
+from . import Message
 
 
 LOGGER = logging.getLogger("PLUMBINTEL")

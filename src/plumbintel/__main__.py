@@ -1,12 +1,12 @@
 import logging
-import sql
-import udp
 import json
-import mqtt
 import time
 import pypyodbc
 import threading
-import __init__ as plumbintel
+from . import sql
+from . import udp
+from . import mqtt
+from . import CONF_PATH
 
 LOGGER = logging.getLogger("PLUMBINTEL")
 
@@ -33,7 +33,7 @@ def configure():
         ***MUST BE RUN FIRST***
     """
     conf = None
-    conf_path = plumbintel.CONF_PATH
+    conf_path = CONF_PATH
     try:
         with open(conf_path, mode='r') as conf_file:
             conf = json.load(conf_file)

@@ -4,7 +4,7 @@ import socket
 import time
 import collections
 import threading
-from __init__ import Message
+from . import Message
 
 LOGGER = logging.getLogger("PLUMBINTEL")
 
