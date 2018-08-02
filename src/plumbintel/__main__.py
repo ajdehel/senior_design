@@ -16,7 +16,8 @@ def socket_interface(config):
             listener.start_thread()
             while True:
                 time.sleep(10.0)
-                insert_into_database(db, config["SQL"]["table"], listener.message_queue)
+                if len(listener.message_queue):
+                    insert_into_database(db, config["SQL"]["table"], listener.message_queue)
 
 def mqtt_interface(config):
     with sql.Database(**config["SQL"]["Connection"], timeout=30) as db:
@@ -26,7 +27,8 @@ def mqtt_interface(config):
             client.start_thread()
             while True:
                 time.sleep(10.0)
-                insert_into_database(db, config["SQL"]["table"], client.message_queue)
+                if len(client.message_queue):
+                    insert_into_database(db, config["SQL"]["table"], client.message_queue)
 
 def main():
     config = configure()

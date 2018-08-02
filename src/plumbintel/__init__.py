@@ -68,7 +68,8 @@ def insert_into_database(db, db_table, queue):
                 insertions += 1
     except IndexError as e:
         LOGGER.info(f"Inserted {insertions} entries into the Database")
-    except pypyodbc.DatabaseError as e:
+    except Exception as e:
+        LOGGER.error(e)
         LOGGER.error("Could not insert entry into db")
 
 

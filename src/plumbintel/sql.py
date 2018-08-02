@@ -40,13 +40,8 @@ class Database:
         val_string = f"({values})"
         insert_string = f"INSERT INTO {table_name} {col_string} VALUES {val_string};"
         LOGGER.debug(insert_string)
-        try:
-            with self.connection.cursor().execute(insert_string):
-                LOGGER.debug("Insert Succeeded.")
-        except pypyodbc.DataError as error:
-            LOGGER.error(error)
-        except Exception as error:
-            LOGGER.error(error)
+        with self.connection.cursor().execute(insert_string):
+            LOGGER.debug("Insert Succeeded.")
 
     @property
     def connected(self):
