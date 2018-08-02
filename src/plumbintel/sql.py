@@ -10,6 +10,11 @@ class Database:
         connection_string = (f"DRIVER={{{driver}}};SERVER={server};PORT={port};"
                              f"DATABASE={database};UID={username};PWD={password}")
         LOGGER.debug(kwargs)
+        invalid_kwargs = ( (driver is None) or (server is None) or (port is None)
+                          or (database is None) or (username is None) or (password is None) )
+        if invalid_kwargs:
+            LOGGER.critical("Invalid key word arguments to Database()")
+            raise TypeError
         LOGGER.debug(f"connecting to {username}@{database} at {server}:{port} with {driver}")
         self.connection = pypyodbc.connect(connection_string, **kwargs)
         LOGGER.info("Connection Succeeded.")
@@ -39,6 +44,8 @@ class Database:
             with self.connection.cursor().execute(insert_string):
                 LOGGER.debug("Insert Succeeded.")
         except pypyodbc.DataError as error:
+            LOGGER.error(error)
+        except Exception as error:
             LOGGER.error(error)
 
     @property
