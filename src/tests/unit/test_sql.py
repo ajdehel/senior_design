@@ -1,33 +1,52 @@
-import sql
+import logging
 import unittest
 from unittest import mock
+
+from plumbintel import sql
+
+logging.getLogger("PLUMBINTEL").setLevel(100)
 
 class TestDatabase(unittest.TestCase):
 
     def setUp(self):
-        self.mocked_Connection = mock.Mock()
-        self.mocked_Cursor = mock.Mock()
-        self.patched_Connect = mock.patch("pypyodbc.connect")
-        self.patched_Connect.start()
-        self.mocked_Connect = self.patched_Connect.start()
-        self.mocked_Connect.return_value = self.mocked_Connection
-        self.mocked_Connection.cursor.return_value = self.mocked_Cursor
+        # mock pypyodbc.connect()
+        self.patched_connect = mock.patch("pypyodbc.connect")
+        self.mocked_connect = self.patched_connect.start()
+        self.mocked_connection = mock.Mock()
+        self.mocked_connect.return_value = self.mocked_connection
+        # mock cursor
+        self.mocked_cursor = mock.Mock()
+        self.mocked_connection.cursor.return_value = self.mocked_cursor
+        # mock execute
+        self.mocked_execute = mock.Mock()
+        self.mocked_cursor.execute = self.mocked_execute
+        # config to reuse
+        self.constructor_kwargs = ["driver", "server", "port", "database", "username", "password"]
 
-    def test__insert_into__with_columns(self):
-        db = sql.Database()
-        values = (1, 14.0, 0)
-        columns = ("deviceID", "metricA", "metricB")
-        db.insert_into("HelloTable", values, columns=columns)
-        print(self.mocked_Cursor.execute.call_args)
+    ### init tests
+    def test_init__error_on_no_kwargs(self):
+        with self.assertRaises(TypeError):
+            test_db = sql.Database()
 
-    def test__insert_into__without_columns(self):
-        db = sql.Database()
-        values = (1, 14.0, 0)
-        db.insert_into("HelloTable", values)
-        print(self.mocked_Cursor.execute.call_args)
+    def test_init__error_on_missing_kwargs(self):
+        for key in self.constructor_kwargs:
+            test_config = { key: f"TEST_{key}" for key in self.constructor_kwargs }
+            test_config[key] = None
+            with self.subTest(f"{key}=None"):
+                with self.assertRaises(TypeError):
+                    test_db = sql.Database()
+
+
+    ### insert tests
+    def test_insert_into__execute_called(self):
+        test_config = { key: f"TEST_{key}" for key in self.constructor_kwargs }
+        test_db = sql.Database(**test_config)
+        values = ("TEST", "TEST", "TEST")
+        test_db.insert("HelloTable", values)
+        self.assertTrue(self.mocked_cursor.execute.called)
 
     def tearDown(self):
-        self.patched_Connect.stop()
+        self.patched_connect.stop()
 
 if __name__ == "__main__":
     unittest.main()
