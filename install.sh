@@ -37,4 +37,6 @@ curl https://packages.microsoft.com/config/ubuntu/16.04/mssql-server-2017.list |
 ### Install Plumbintel package
 cd src
 pip install .
+### Move config file to /etc/
+mv plumbintel.conf /etc
 exit
